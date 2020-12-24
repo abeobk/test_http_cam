@@ -16,12 +16,21 @@
 #include <map>
 #include <cmath>
 #include <functional>
+#include <thread>
 
-#define USE_GSTREAMER
+//#define USE_GSTREAMER
 
 using namespace cv;
 using namespace std;
 using namespace abeosys;
+
+
+std::mutex mtx;
+
+cv::VideoCapture cap(0);
+cv::Mat buff_img;
+cv::Mat last_img;
+
 
 TicToc tt;
 #define PORT_NUM 12345
@@ -57,7 +66,6 @@ std::string gstreamer_pipeline(int capture_width, int capture_height, int displa
 }
 #endif
 
-VideoCapture cap(0);
 
 void clientService(TCPChannel &con)
 {
@@ -82,14 +90,12 @@ void clientService(TCPChannel &con)
              while(true){
                  TicToc tt;
                  tt.tic();
-                 cap.grab();
-                 cap.retrieve(cimg);
-                 cout<<"Grab time: "<<tt.toc()<<"ms"<<endl;
-                 if(cimg.empty())continue;
-
-                 tt.tic();
                  std::vector<uchar> buf;
-                 cv::imencode(".jpg",cimg,buf, {cv::IMWRITE_JPEG_QUALITY,50});
+                 {
+                    std::lock_guard<std::mutex> lock(mtx);    
+                    last_img = buff_img.clone();
+                 }
+                 cv::imencode(".jpg",last_img, buf, {cv::IMWRITE_JPEG_QUALITY,50});
                  cout<<"Encode time: "<<tt.toc()<<"ms"<<endl;
 
                  tt.tic();
@@ -116,9 +122,35 @@ void postService() { }
 int main(int argc, char **argv)
 {
     std::cout<<"Initializing camera..."<<std::endl;
-    cap.release();
+    //cap.release();
+
+#ifdef USE_GSTREAMER
     std::string pipeline = gstreamer_pipeline(1280, 720, 1280, 720, 90, 0);
     cap = VideoCapture(pipeline);
+#else
+    cap.set(cv::CAP_PROP_FRAME_WIDTH, 1280);
+    cap.set(cv::CAP_PROP_FRAME_HEIGHT, 720);
+    cap.set(cv::CAP_PROP_FPS, 60);
+
+    cv::Mat img;
+    cap >> img;
+    cout << "Camera resolution: " << img.cols << "x" << img.rows<<endl;
+
+    std::thread th([&]{
+        cout<<"Starting capture thread..."<<endl;
+        while(true){
+             TicToc tt;
+             tt.tic();
+             cap.grab();
+             {
+                std::lock_guard<std::mutex> lock(mtx);    
+                cap.retrieve(buff_img);
+             }
+             cout<<"Grab time: "<<tt.toc()<<"ms"<<endl;
+             if(buff_img.empty())continue;
+        }
+    });
+#endif
 
     cout << "Abeo pi camera server\n";
     TCPServer server;
