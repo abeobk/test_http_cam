@@ -19,6 +19,8 @@
 #include <thread>
 
 //#define USE_GSTREAMER
+#define CAM_W 1280
+#define CAM_H 960
 
 using namespace cv;
 using namespace std;
@@ -27,7 +29,7 @@ using namespace abeosys;
 
 std::mutex mtx;
 
-cv::VideoCapture cap(0);
+cv::VideoCapture cap;
 cv::Mat buff_img;
 cv::Mat last_img;
 
@@ -125,12 +127,13 @@ int main(int argc, char **argv)
     //cap.release();
 
 #ifdef USE_GSTREAMER
-    std::string pipeline = gstreamer_pipeline(1280, 720, 1280, 720, 90, 0);
+    std::string pipeline = gstreamer_pipeline(CAM_W, CAM_H, CAM_W, CAM_H, 90, 0);
     cap = VideoCapture(pipeline);
 #else
-    cap.set(cv::CAP_PROP_FRAME_WIDTH, 1280);
-    cap.set(cv::CAP_PROP_FRAME_HEIGHT, 720);
-    cap.set(cv::CAP_PROP_FPS, 60);
+    cap = VideoCapture(0,cv::CAP_V4L2);
+    cap.set(cv::CAP_PROP_FRAME_WIDTH, CAM_W);
+    cap.set(cv::CAP_PROP_FRAME_HEIGHT, CAM_H);
+    cap.set(cv::CAP_PROP_FPS, 90);
 
     cv::Mat img;
     cap >> img;

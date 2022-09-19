@@ -1,4 +1,4 @@
-# Install script for directory: /home/pi/test_http_cam
+# Install script for directory: /home/abeo/projects/test_http_cam
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -45,5 +45,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/pi/test_http_cam/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/abeo/projects/test_http_cam/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")
